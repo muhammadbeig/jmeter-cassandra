@@ -78,7 +78,7 @@ public abstract class TestUtils {
                 bs.setString(name, (String)value);
                 break;
             case TIMESTAMP:
-                bs.setDate(name, (Date)value);
+                bs.setDate(name, LocalDate.fromMillisSinceEpoch(((Date)value).getTime()));
                 break;
             case UUID:
                 bs.setUUID(name, (UUID)value);
@@ -142,11 +142,11 @@ public abstract class TestUtils {
             case TIMEUUID:
                 return row.getUUID(name);
             case LIST:
-                return row.getList(name, type.getTypeArguments().get(0).asJavaClass());
+                return row.getList(name, type.getTypeArguments().get(0).getClass());
             case SET:
-                return row.getSet(name, type.getTypeArguments().get(0).asJavaClass());
+                return row.getSet(name, type.getTypeArguments().get(0).getClass());
             case MAP:
-                return row.getMap(name, type.getTypeArguments().get(0).asJavaClass(), type.getTypeArguments().get(1).asJavaClass());
+                return row.getMap(name, type.getTypeArguments().get(0).getClass(), type.getTypeArguments().get(1).getClass());
         }
         throw new RuntimeException("Missing handling of " + type);
     }
@@ -312,7 +312,7 @@ public abstract class TestUtils {
         // keep alive kicks in, but that's a fairly long time. So we cheat and trigger a force
         // the detection by forcing a request.
         if (waitForDead || waitForOut)
-            cluster.manager.submitSchemaRefresh(null, null,null);
+            cluster.manager.submitSchemaRefresh(null,null, null,null);
 
         InetAddress address;
         try {

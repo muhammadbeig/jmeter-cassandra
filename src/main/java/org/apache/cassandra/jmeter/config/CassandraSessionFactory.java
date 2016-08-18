@@ -77,9 +77,9 @@ public class CassandraSessionFactory {
 
           Cluster cluster = cb.build();
 
-
+//          System.out.println("Host:"+host);
           if (keyspace != null && !keyspace.isEmpty())
-        session = cluster.connect(keyspace);
+        	  session = cluster.connect(keyspace);
       else
         session = cluster.connect();
 

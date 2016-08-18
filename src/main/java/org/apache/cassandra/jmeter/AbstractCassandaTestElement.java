@@ -210,7 +210,11 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
             String argument = arguments[i];
 
             DataType tp = colDefs.getType(i);
-            Class<?> javaType = tp.asJavaClass();
+//            Class<?> javaType = tp.asJavaClass();
+            Class<?> javaType = tp.getClass();
+            CodecRegistry cr = CodecRegistry.DEFAULT_INSTANCE;
+            
+           
             try {
                 if (javaType == Integer.class)
                     pstmt.setInt(i, Integer.parseInt(argument));
@@ -220,11 +224,11 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
                     pstmt.setBytes(i, ByteBuffer.wrap(hexStringToByteArray(argument)));
                 else if (javaType == Date.class) {
                     if (argument.length() == (CASSANDRA_DATE_FORMAT_STRING1 + "+ZZZ").length())
-                        pstmt.setDate(i, CassandraDateFormat1.parse(argument));
+                        pstmt.setDate(i, LocalDate.fromMillisSinceEpoch(CassandraDateFormat1.parse(argument).getTime()));
                     else if (argument.length() == CASSANDRA_DATE_FORMAT_STRING2.length())
-                        pstmt.setDate(i, CassandraDateFormat2.parse(argument));
+                        pstmt.setDate(i, LocalDate.fromMillisSinceEpoch(CassandraDateFormat2.parse(argument).getTime()));
                     else if (argument.length() == CASSANDRA_DATE_FORMAT_STRING3.length())
-                        pstmt.setDate(i, CassandraDateFormat3.parse(argument));
+                        pstmt.setDate(i, LocalDate.fromMillisSinceEpoch(CassandraDateFormat3.parse(argument).getTime()));
                     }
 
                 else if (javaType == BigDecimal.class)
@@ -246,20 +250,35 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
                 else if (javaType == BigInteger.class)
                     pstmt.setVarint(i, new BigInteger(argument));
                     else if (javaType == TupleValue.class) {
-                    TupleValue tup = (TupleValue) tp.parse(argument);
-                    pstmt.setTupleValue(i, tup);
+                    	TypeCodec<TupleValue> typeCodec= TypeCodec.tuple(null);
+                    	cr.register(typeCodec);
+//                    	typeCodec.parse(argument);
+//                    	cr.codecFor(argument);
+                    	pstmt.setTupleValue(i, typeCodec.parse(argument));
+                    	
+//                    TupleValue tup = (TupleValue) tp.parse(argument);
+//                    pstmt.setTupleValue(i, tup);
                 } else if (javaType == UDTValue.class) {
-                    UDTValue udt = (UDTValue) tp.parse(argument);
-                    pstmt.setUDTValue(i, udt);
+                	TypeCodec<UDTValue>	typeCodec=TypeCodec.userType(null);
+                	pstmt.setUDTValue(i, typeCodec.parse(argument));
+//                	UDTValue udt = (UDTValue) tp.parse(argument);
+//                    pstmt.setUDTValue(i, udt);
                     } else if (javaType.isAssignableFrom(Set.class)) {
-                    Set<?> theSet = (Set<?>) tp.parse(argument);
-                    pstmt.setSet(i,theSet);
+                    	TypeCodec<Set<Object>>	typeCodec=TypeCodec.set(null);
+                    	pstmt.setSet(i, typeCodec.parse(argument));
+                    	
+//                    Set<?> theSet = (Set<?>) tp.parse(argument);
+//                    pstmt.setSet(i,theSet);
                 } else if (javaType.isAssignableFrom(List.class)) {
-                    List<?> theList = (List<?>) tp.parse(argument);
-                    pstmt.setList(i,theList);
+                	TypeCodec<List<Object>>	typeCodec=TypeCodec.list(null);
+                	pstmt.setList(i, typeCodec.parse(argument));
+//                    List<?> theList = (List<?>) tp.parse(argument);
+//                    pstmt.setList(i,theList);
                 } else if (javaType.isAssignableFrom(Map.class)) {
-                    Map<?,?> theMap = (Map<?,?>) tp.parse(argument);
-                    pstmt.setMap(i,theMap);
+                	TypeCodec<Map<Object, Object>> typeCodec=TypeCodec.map(null, null);
+                	pstmt.setMap(i, typeCodec.parse(argument));
+//                    Map<?,?> theMap = (Map<?,?>) tp.parse(argument);
+//                    pstmt.setMap(i,theMap);
                 }
                 else
                     throw new RuntimeException("Unsupported Type: " + javaType);
@@ -326,8 +345,8 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
 
         DataType columnType = row.getColumnDefinitions().getType(index);
         if (columnType.isCollection()) {
-            if (columnType.asJavaClass().isAssignableFrom(Set.class)) {
-                Class<?> innerType = columnType.getTypeArguments().get(0).asJavaClass();
+            if (columnType.getClass().isAssignableFrom(Set.class)) {
+                Class<?> innerType = columnType.getTypeArguments().get(0).getClass();
                 StringBuilder sb = new StringBuilder("{");
                 String comma = "";
                 for (Object o : row.getSet(index,innerType)) {
@@ -337,8 +356,8 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
                 sb.append("}");
                 return sb;
             }
-            if (columnType.asJavaClass().isAssignableFrom(List.class)) {
-                Class<?> innerType = columnType.getTypeArguments().get(0).asJavaClass();
+            if (columnType.getClass().isAssignableFrom(List.class)) {
+                Class<?> innerType = columnType.getTypeArguments().get(0).getClass();
                 StringBuilder sb = new StringBuilder("[");
                 String comma = "";
                 for (Object o : row.getList(index, innerType)) {
@@ -348,9 +367,9 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
                 sb.append("]");
                 return sb;
             }
-            if (columnType.asJavaClass().isAssignableFrom(Map.class)) {
-                Class<?> keyType = columnType.getTypeArguments().get(0).asJavaClass();
-                Class<?> valueType = columnType.getTypeArguments().get(1).asJavaClass();
+            if (columnType.getClass().isAssignableFrom(Map.class)) {
+                Class<?> keyType = columnType.getTypeArguments().get(0).getClass();
+                Class<?> valueType = columnType.getTypeArguments().get(1).getClass();
                 StringBuilder sb = new StringBuilder("{");
                 String comma = "";
                 for (Map.Entry<?,?> e :  row.getMap(index, keyType, valueType).entrySet()) {
@@ -366,7 +385,7 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
             throw new RuntimeException("Unknown collection type: " + columnType.getName() );
         }
 
-        Class<?> javaType = columnType.asJavaClass();
+        Class<?> javaType = columnType.getClass();
 
         if (javaType == Integer.class)
             return row.getInt(index);
@@ -443,7 +462,8 @@ public abstract class AbstractCassandaTestElement extends AbstractTestElement im
 
                 Object o = getObject(crow,i) ;
 
-                if (rs.getColumnDefinitions().getType(i).asJavaClass() == ByteBuffer.class) {
+                // == ByteBuffer.class
+                if (rs.getColumnDefinitions().getType(i).getClass().isInstance(ByteBuffer.class)) {
                     o = bytesToHex((ByteBuffer) o);
                 }
 

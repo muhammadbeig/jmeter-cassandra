@@ -22,11 +22,11 @@
 
     <groupId>groupId</groupId>
     <artifactId>jmeter-cassandra</artifactId>
-    <version>0.9.5</version>
+    <version>0.9.6</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <cassandra.version>2.1.9</cassandra.version>
+        <cassandra.version>3.5</cassandra.version>
     </properties>
 
     <dependencies>
@@ -39,7 +39,7 @@
         <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
-            <version>2.1.7.1</version>
+            <version>3.1.0</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>
